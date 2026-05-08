@@ -11,16 +11,22 @@
 
 ## 实验列表
 
-### 实验一：ICP 点云配准
+### 实验一：SLAM GPU 算子基准
 
-SLAM 核心计算单元，CPU 与 GPU 频繁交替，最能体现统一内存的零拷贝优势。
+跑两个 SLAM 中真正吃 GPU 的计算，测量 GPU 计算中数据传输的占比。全用 PyTorch，两边都是真 GPU（MPS / CUDA），不依赖 Open3D（Open3D 在 macOS 和 Windows 下都是 CPU-only，无法体现 GPU 架构差异）。
+
+**算子 1 — Pairwise Distance + Argmin（模拟特征匹配 / ICP 最近邻）**:
+10K × 10K 距离矩阵在 GPU 上算，取 argmin 找最近邻，结果传回 CPU
+
+**算子 2 — Cholesky 分解（模拟 BA 优化的 Hessian 求解）**:
+4000×4000 正定矩阵在 GPU 上做 Cholesky，结果传回 CPU
 
 ```bash
-pip install open3d torch numpy
-python icp_benchmark.py
+pip install torch numpy
+python slam_ops_benchmark.py
 ```
 
-**对比维度**：每轮 ICP 迭代中传输耗时占比
+**对比维度**：每个算子中传输耗时占总耗时的比例（UMA ≈ 0% vs PCIe 传输占比）
 
 ### 实验二：数据传输开销
 
